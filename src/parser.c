@@ -939,12 +939,24 @@ static ASTNode* parse_struct_or_class(Parser *p, int is_class) {
                 if (lexer_peek(p->lexer).type == TOKEN_LPAREN) {
                     lexer_advance(p->lexer);
                     ASTNode *method = ast_alloc(AST_FUNC_DEF);
+
+                    int is_ctor = (strcmp(mn.lexeme, "constructor") == 0);
+                    if (is_ctor && mt && strcmp(token_type_name(p->registry, mt->base_type), "void") != 0) {
+                        type_free(mt);
+                        mt = type_alloc(TOKEN_NUMBER);
+                    }
+
                     method->d.func_def.ret_type = mt;
-                    int _nlen2 = snprintf(NULL, 0, "%s__%s", p->class_info[ci].name, mn.lexeme);
-                    char *_tmp2 = (char*)malloc(_nlen2 + 1);
-                    snprintf(_tmp2, _nlen2 + 1, "%s__%s", p->class_info[ci].name, mn.lexeme);
-                    strcpy_safe(method->d.func_def.name, _tmp2); free(_tmp2);
+                    if (is_ctor) {
+                        strcpy_safe(method->d.func_def.name, p->class_info[ci].name);
+                    } else {
+                        int _nlen2 = snprintf(NULL, 0, "%s__%s", p->class_info[ci].name, mn.lexeme);
+                        char *_tmp2 = (char*)malloc(_nlen2 + 1);
+                        snprintf(_tmp2, _nlen2 + 1, "%s__%s", p->class_info[ci].name, mn.lexeme);
+                        strcpy_safe(method->d.func_def.name, _tmp2); free(_tmp2);
+                    }
                     method->d.func_def.is_method = 1;
+                    method->d.func_def.is_constructor = is_ctor;
                     strcpy_safe(method->d.func_def.class_name, p->class_info[ci].name);
 
                     ASTNode *ptail = NULL;
@@ -1016,7 +1028,6 @@ static ASTNode* parse_struct_or_class(Parser *p, int is_class) {
     }
 
     if (!lexer_match(p->lexer, TOKEN_RBRACE)) parser_error(p, "Expected '}'");
-    if (!lexer_match(p->lexer, TOKEN_SEMICOLON)) parser_error(p, "Expected ';' after struct/class");
 
     p->class_info[ci].size = def->d.struct_def.size;
     return def;

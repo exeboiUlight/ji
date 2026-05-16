@@ -6,16 +6,18 @@ set CC=gcc
 set CFLAGS=-Wall -Wextra -O2
 set SRCDIR=src
 set BINDIR=bin
-set TARGET=%BINDIR%\ji.exe
-
-if not exist %BINDIR% mkdir %BINDIR%
+set TARGET=bin/ji.exe
 
 echo === Building JI 1.0 Compiler ===
 echo Compiler: %CC%
 echo Flags:    %CFLAGS%
+echo Target:   %TARGET%
 echo.
 
 set SRCS=%SRCDIR%\main.c ^
+         %SRCDIR%\project.c ^
+         %SRCDIR%\jit.c ^
+         %SRCDIR%\emu.c ^
          %SRCDIR%\token.c ^
          %SRCDIR%\lexer.c ^
          %SRCDIR%\ast.c ^
@@ -24,17 +26,9 @@ set SRCS=%SRCDIR%\main.c ^
          %SRCDIR%\emit.c ^
          %SRCDIR%\pe.c ^
          %SRCDIR%\elf.c ^
-         %SRCDIR%\safety.c ^
-         %SRCDIR%\jit.c ^
-         %SRCDIR%\project.c
+         %SRCDIR%\safety.c
 
 %CC% %CFLAGS% -o %TARGET% %SRCS%
-if errorlevel 1 (
-    echo.
-    echo [ERROR] Build failed!
-    if exist %TARGET% del %TARGET%
-    exit /b 1
-)
 
 echo.
 echo === Build successful! ===

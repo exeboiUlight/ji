@@ -6,6 +6,7 @@
 #include "../include/jit.h"
 #include "../include/codegen.h"
 #include "../include/token.h"
+#include "../include/emu.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +15,15 @@
 #include <sys/mman.h>
 #include <dlfcn.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#endif
+
+#ifdef _WIN32
+#include <imagehlp.h>
+typedef uint64_t uint64_t;
+typedef uint32_t uint32_t;
+typedef uint16_t uint16_t;
+typedef uint8_t uint8_t;
 #endif
 
 /* Determine which DLL a function belongs to */
@@ -138,9 +148,32 @@ int jit_run(Codegen *cg, PEInfo *info) {
     return result;
 
 #else
-    /* ---- Linux JIT ---- */
-    fprintf(stderr, "[JIT] Linux JIT not yet implemented\n");
+    /* ---- Linux Emulator (embedded ELF/EXE emulator) ---- */
     (void)cg;
-    return 1;
+
+    if (info->entry_offset < 0) {
+        fprintf(stderr, "[EMU] Entry point not found\n");
+        return 1;
+    }
+    if (info->code_size == 0) {
+        fprintf(stderr, "[EMU] No code generated\n");
+        return 1;
+    }
+
+    EmuContext emu;
+    memset(&emu, 0, sizeof(emu));
+
+    uint64_t entry_point = 0x400000 + info->entry_offset;
+    if (emu_init(&emu, info->code, info->code_size, entry_point) != 0) {
+        fprintf(stderr, "[EMU] Failed to initialize emulator\n");
+        return 1;
+    }
+
+    printf("[EMU] Executing (entry: 0x%llx)...\n", (unsigned long long)entry_point);
+    int result = emu_run(&emu);
+    emu_free(&emu);
+
+    printf("[EMU] Process exited with code %d\n", result);
+    return result;
 #endif
 }

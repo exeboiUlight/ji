@@ -1,0 +1,52 @@
+{
+    "name": "ji-lang",
+    "icon": "icon.png",
+    "displayName": "JI Language",
+    "description": "Language support for JI",
+    "version": "1.0.0",
+    "repository": "https://github.com/exeboiUlight/JI",
+    "publisher": "jilang",
+    "author": "ExeBoi",
+    "engines": {
+        "vscode": "*"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "scripts": {
+        "build": "vsce package",
+        "publish": "vsce publish",
+        "validate": "vsce validate"
+    },
+    "devDependencies": {
+        "@vscode/vsce": "^2.15.0"
+    },
+    "contributes": {
+        "languages": [
+            {
+                "id": "ji",
+                "aliases": ["JI", "JI Language"],
+                "extensions": [".ji"],
+                "icon": {
+                    "light": "icon.png",
+                    "dark": "icon.png"
+                },
+                "configuration": "./language-configuration.json",
+                "diagnosticSource": "ji"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "ji",
+                "scopeName": "source.ji",
+                "path": "./syntaxes/ji.tmLanguage.json"
+            }
+        ],
+        "snippets": [
+            {
+                "language": "ji",
+                "path": "./snippets/ji.json"
+            }
+        ]
+    }
+}

@@ -1,0 +1,202 @@
+{
+    "name": "PankLang (JI)",
+    "scopeName": "source.ji",
+    "patterns": [
+        {
+            "include": "#errors"
+        },
+        {
+            "include": "#comments"
+        },
+        {
+            "include": "#strings"
+        },
+        {
+            "include": "#numbers"
+        },
+        {
+            "include": "#keywords"
+        },
+        {
+            "include": "#types"
+        },
+        {
+            "include": "#storage"
+        },
+        {
+            "include": "#operators"
+        },
+        {
+            "include": "#functions"
+        },
+        {
+            "include": "#builtin"
+        }
+    ],
+    "repository": {
+        "errors": {
+            "patterns": [
+                {
+                    "name": "invalid.deprecated.error.ji",
+                    "match": ";;"
+                },
+                {
+                    "name": "invalid.deprecated.error.ji",
+                    "match": ">>="
+                },
+                {
+                    "name": "invalid.deprecated.error.ji",
+                    "match": "<<="
+                },
+                {
+                    "name": "invalid.deprecated.error.ji",
+                    "match": "&&&"
+                },
+                {
+                    "name": "invalid.deprecated.error.ji",
+                    "match": "\\|\\|\\|"
+                },
+                {
+                    "name": "invalid.illegal.character.ji",
+                    "match": "[^\\x00-\\x7F]"
+                },
+                {
+                    "name": "invalid.illegal.tab.ji",
+                    "match": "\\t"
+                }
+            ]
+        },
+        "comments": {
+            "patterns": [
+                {
+                    "name": "comment.line.double-slash.ji",
+                    "begin": "//",
+                    "end": "$"
+                },
+                {
+                    "name": "comment.block.ji",
+                    "begin": "/\\*",
+                    "end": "\\*/"
+                }
+            ]
+        },
+        "strings": {
+            "patterns": [
+                {
+                    "name": "string.quoted.double.ji",
+                    "begin": "\"",
+                    "end": "\"",
+                    "patterns": [
+                        {
+                            "name": "constant.escape.ji",
+                            "match": "\\\\."
+                        },
+                        {
+                            "name": "constant.escape.hex.ji",
+                            "match": "\\\\x[0-9a-fA-F]{2}"
+                        },
+                        {
+                            "name": "constant.escape.unicode.ji",
+                            "match": "\\\\u[0-9a-fA-F]{4}"
+                        }
+                    ]
+                },
+                {
+                    "name": "string.quoted.single.ji",
+                    "begin": "'",
+                    "end": "'",
+                    "patterns": [
+                        {
+                            "name": "constant.escape.ji",
+                            "match": "\\\\."
+                        }
+                    ]
+                }
+            ]
+        },
+        "numbers": {
+            "patterns": [
+                {
+                    "name": "constant.numeric.hex.ji",
+                    "match": "0x[0-9a-fA-F]+"
+                },
+                {
+                    "name": "constant.numeric.binary.ji",
+                    "match": "0b[01]+"
+                },
+                {
+                    "name": "constant.numeric.float.ji",
+                    "match": "\\b[0-9]+\\.[0-9]+([eE][+-]?[0-9]+)?f?\\b"
+                },
+                {
+                    "name": "constant.numeric.integer.ji",
+                    "match": "\\b[0-9]+\\b"
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "name": "keyword.control.ji",
+                    "match": "\\b(if|else|while|do|for|switch|case|default|return|break|continue|goto)\\b"
+                },
+                {
+                    "name": "keyword.other.ji",
+                    "match": "\\b(import|class|struct|virtual|this|new|delete|sizeof|typedef)\\b"
+                },
+                {
+                    "name": "keyword.operator.ji",
+                    "match": "\\b(null|true|false)\\b"
+                }
+            ]
+        },
+        "types": {
+            "patterns": [
+                {
+                    "name": "storage.type.primitive.ji",
+                    "match": "\\b(int|char|float|double|void|long|short|unsigned|signed)\\b"
+                },
+                {
+                    "name": "storage.type.other.ji",
+                    "match": "\\b(struct|class|enum|union)\\b"
+                }
+            ]
+        },
+        "storage": {
+            "patterns": [
+                {
+                    "name": "storage.modifier.ji",
+                    "match": "\\b(static|const|extern|inline|virtual)\\b"
+                }
+            ]
+        },
+        "operators": {
+            "patterns": [
+                {
+                    "name": "keyword.operator.ji",
+                    "match": "([=+\\-*/%&|^!<>]=|\\.\\.|&&|\\|\\||<<|>>|->|\\+\\+|--|(?<!\\.)\\.(?!\\.))"
+                },
+                {
+                    "name": "punctuation.operator.ji",
+                    "match": "[+\\-*/%&|^!<>?:]"
+                }
+            ]
+        },
+        "functions": {
+            "patterns": [
+                {
+                    "name": "entity.name.function.ji",
+                    "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()"
+                }
+            ]
+        },
+        "builtin": {
+            "patterns": [
+                {
+                    "name": "support.function.ji",
+                    "match": "\\b(printf|scanf|puts|gets|fopen|fclose|malloc|free|exit|strlen|strcpy|strcat|strcmp|memcpy|memset)\\b"
+                }
+            ]
+        }
+    }
+}

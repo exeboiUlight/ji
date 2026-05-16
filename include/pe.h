@@ -52,4 +52,10 @@ typedef struct {
 /* Записать PE-файл */
 int pe_write(const char *path, PEInfo *info);
 
+/* Добавить импорт из библиотеки */
+int pe_info_add_import(PEInfo *info, const char *dll_name, const char *func_name);
+
+/* Добавить статическую библиотеку (объектный файл) */
+int pe_info_add_static_lib(PEInfo *info, const char *obj_path, const uint8_t *obj_data, int obj_size);
+
 #endif

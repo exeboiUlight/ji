@@ -97,6 +97,7 @@ typedef struct ASTNode {
             int param_count;
             struct ASTNode *body;     /* Block */
             int is_method;            /* 1 if class method */
+            int is_constructor;       /* 1 if constructor (like JS) */
             char class_name[MAX_IDENT_LEN];
             int is_virtual;
             int vtable_index;

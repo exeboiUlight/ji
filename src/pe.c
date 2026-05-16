@@ -486,3 +486,72 @@ int pe_write(const char *path, PEInfo *info) {
     fclose(f);
     return 0;
 }
+
+int pe_info_add_import(PEInfo *info, const char *dll_name, const char *func_name) {
+    if (!info || !dll_name || !func_name) return -1;
+
+    for (int i = 0; i < info->import_count; i++) {
+        if (strcmp(info->imports[i].dll_name, dll_name) == 0) {
+            for (int j = 0; j < info->imports[i].func_count; j++) {
+                if (strcmp(info->imports[i].func_names[j], func_name) == 0)
+                    return 0;
+            }
+            if (info->imports[i].func_count < info->imports[i].func_capacity) {
+                info->imports[i].func_names[info->imports[i].func_count] = func_name;
+                info->imports[i].func_count++;
+                return 0;
+            }
+        }
+    }
+
+    if (info->import_count >= info->import_capacity) {
+        int newcap = info->import_capacity ? info->import_capacity * 2 : 4;
+        info->imports = (ImportDescriptor*)realloc(info->imports, newcap * sizeof(ImportDescriptor));
+        info->import_capacity = newcap;
+    }
+
+    int idx = info->import_count++;
+    memset(&info->imports[idx], 0, sizeof(ImportDescriptor));
+    info->imports[idx].dll_name = dll_name;
+    info->imports[idx].func_capacity = 16;
+    info->imports[idx].func_names = (const char**)malloc(16 * sizeof(const char*));
+    info->imports[idx].func_names[0] = func_name;
+    info->imports[idx].func_count = 1;
+
+    return 0;
+}
+
+static uint8_t *static_lib_data = NULL;
+static int static_lib_size = 0;
+static int static_lib_capacity = 0;
+
+int pe_info_add_static_lib(PEInfo *info, const char *obj_path, const uint8_t *obj_data, int obj_size) {
+    (void)info;
+    (void)obj_path;
+
+    if (!obj_data || obj_size <= 0) return -1;
+
+    if (static_lib_capacity == 0) {
+        static_lib_capacity = 4096;
+        static_lib_data = (uint8_t*)malloc(static_lib_capacity);
+    }
+
+    if (static_lib_size + obj_size > static_lib_capacity) {
+        static_lib_capacity *= 2;
+        static_lib_data = (uint8_t*)realloc(static_lib_data, static_lib_capacity);
+    }
+
+    memcpy(static_lib_data + static_lib_size, obj_data, obj_size);
+    static_lib_size += obj_size;
+
+    printf("[PE] Added static lib: %s (%d bytes)\n", obj_path, obj_size);
+    return 0;
+}
+
+uint8_t* get_static_lib_data(void) { return static_lib_data; }
+int get_static_lib_size(void) { return static_lib_size; }
+void free_static_lib_data(void) {
+    if (static_lib_data) { free(static_lib_data); static_lib_data = NULL; }
+    static_lib_size = 0;
+    static_lib_capacity = 0;
+}

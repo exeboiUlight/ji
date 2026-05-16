@@ -46,6 +46,49 @@ static int json_bool_value(const char *json, const char *key) {
     return (strncmp(p, "true", 4) == 0);
 }
 
+static int json_array_parse_libs(const char *json, LibraryConfig *libs, int max_libs) {
+    const char *arr = strstr(json, "\"libraries\"");
+    if (!arr) return 0;
+    arr = strchr(arr, '[');
+    if (!arr) return 0;
+    arr++;
+
+    int count = 0;
+    const char *obj = arr;
+    while (*obj && count < max_libs) {
+        obj = strstr(obj, "{");
+        if (!obj) break;
+        const char *end = strstr(obj, "}");
+        if (!end) break;
+
+        char obj_buf[512];
+        int obj_len = (int)(end - obj + 1);
+        if (obj_len < sizeof(obj_buf)) {
+            memcpy(obj_buf, obj, obj_len);
+            obj_buf[obj_len] = '\0';
+
+            memset(&libs[count], 0, sizeof(LibraryConfig));
+            json_str_value(obj_buf, "name", libs[count].name, sizeof(libs[count].name));
+            json_str_value(obj_buf, "github", libs[count].github, sizeof(libs[count].github));
+            json_str_value(obj_buf, "path", libs[count].path, sizeof(libs[count].path));
+
+            char type_str[32] = "dynamic";
+            json_str_value(obj_buf, "type", type_str, sizeof(type_str));
+            if (strcmp(type_str, "static") == 0)
+                libs[count].type = LIB_STATIC;
+            else
+                libs[count].type = LIB_DYNAMIC;
+
+            snprintf(libs[count].lib_file, sizeof(libs[count].lib_file), "%s%s",
+                libs[count].path, libs[count].name);
+
+            count++;
+        }
+        obj = end + 1;
+    }
+    return count;
+}
+
 int project_create(const char *name) {
     char dir[512];
     snprintf(dir, sizeof(dir), "%s", name);
@@ -74,6 +117,10 @@ int project_create(const char *name) {
     fprintf(f, "    \"author\": \"\",\n");
     fprintf(f, "    \"description\": \"\",\n");
     fprintf(f, "    \"icon\": \"\",\n");
+    fprintf(f, "\n");
+    fprintf(f, "    \"libraries\": [\n");
+    fprintf(f, "        /* { \"name\": \"mylib\", \"github\": \"username/repo\", \"path\": \"lib/\" } */\n");
+    fprintf(f, "    ],\n");
     fprintf(f, "\n");
     fprintf(f, "    \"windows\": {\n");
     fprintf(f, "        \"company\": \"\",\n");
@@ -105,8 +152,7 @@ int project_create(const char *name) {
     }
     fprintf(f, "import \"io.ji\";\n\n");
     fprintf(f, "int main() {\n");
-    fprintf(f, "    printf(\"Hello from '%s'!\\n\");\n", name);
-    fprintf(f, "\n");
+    fprintf(f, "    io.println_str(\"Hello from '%s'!\");\n", name);
     fprintf(f, "    return 0;\n");
     fprintf(f, "}\n");
     fclose(f);
@@ -129,7 +175,26 @@ int project_create(const char *name) {
     fprintf(f, "int fclose(void* file);\n");
     fprintf(f, "void* malloc(int size);\n");
     fprintf(f, "void free(void* ptr);\n");
-    fprintf(f, "void exit(int code);\n");
+    fprintf(f, "void exit(int code);\n\n");
+    fprintf(f, "class io {\n");
+    fprintf(f, "    void print(int msg) {\n");
+    fprintf(f, "        printf(\"%%d\", msg);\n");
+    fprintf(f, "    }\n\n");
+    fprintf(f, "    void println(int msg) {\n");
+    fprintf(f, "        printf(\"%%d\\n\", msg);\n");
+    fprintf(f, "    }\n\n");
+    fprintf(f, "    void print_str(int msg) {\n");
+    fprintf(f, "        printf(\"%%s\", msg);\n");
+    fprintf(f, "    }\n\n");
+    fprintf(f, "    void println_str(int msg) {\n");
+    fprintf(f, "        printf(\"%%s\\n\", msg);\n");
+    fprintf(f, "    }\n\n");
+    fprintf(f, "    int input() {\n");
+    fprintf(f, "        int x;\n");
+    fprintf(f, "        scanf(\"%%d\", &x);\n");
+    fprintf(f, "        return x;\n");
+    fprintf(f, "    }\n");
+    fprintf(f, "}\n");
     fclose(f);
 
     printf("[Project] Created project '%s'\n", name);
@@ -193,6 +258,9 @@ int project_load(const char *dir, ProjectConfig *cfg) {
         }
     }
 
+    /* Parse libraries section */
+    cfg->libraries.count = json_array_parse_libs(json, cfg->libraries.libs, PROJ_MAX_LIBS);
+
     free(json);
     return 0;
 }
@@ -203,6 +271,12 @@ void project_print(const ProjectConfig *cfg) {
     printf("  Author: %s\n", cfg->author);
     printf("  Description: %s\n", cfg->description);
     printf("  Icon: %s\n", cfg->icon);
+    printf("  Libraries: %d\n", cfg->libraries.count);
+    for (int i = 0; i < cfg->libraries.count; i++) {
+        printf("    - %s (%s) path: %s\n", cfg->libraries.libs[i].name,
+            cfg->libraries.libs[i].type == LIB_STATIC ? "static" : "dynamic",
+            cfg->libraries.libs[i].path);
+    }
     printf("  Windows:\n");
     printf("    Company: %s\n", cfg->windows.company);
     printf("    Copyright: %s\n", cfg->windows.copyright);
@@ -213,4 +287,40 @@ void project_print(const ProjectConfig *cfg) {
     printf("  Linux:\n");
     printf("    Categories: %s\n", cfg->linux.desktop_entry.categories);
     printf("    Comment: %s\n", cfg->linux.desktop_entry.comment);
+}
+
+int project_fetch_libraries(ProjectConfig *cfg, const char *project_dir) {
+    (void)project_dir;
+    int fetched = 0;
+    for (int i = 0; i < cfg->libraries.count; i++) {
+        LibraryConfig *lib = &cfg->libraries.libs[i];
+        printf("[Project] Library: %s\n", lib->name);
+
+        if (lib->path[0] == '\0') {
+            printf("  Warning: no path specified\n");
+            continue;
+        }
+
+        if (lib->type == LIB_DYNAMIC) {
+            const char *ext = strrchr(lib->name, '.');
+            if (!ext) {
+#ifdef _WIN32
+                snprintf(lib->lib_file, sizeof(lib->lib_file), "%s%s.dll", lib->path, lib->name);
+#else
+                snprintf(lib->lib_file, sizeof(lib->lib_file), "%s/lib%s.so", lib->path, lib->name);
+#endif
+            }
+            printf("  Dynamic library: %s\n", lib->lib_file);
+        } else {
+#ifdef _WIN32
+            snprintf(lib->lib_file, sizeof(lib->lib_file), "%s%s.obj", lib->path, lib->name);
+#else
+            snprintf(lib->lib_file, sizeof(lib->lib_file), "%s%s.o", lib->path, lib->name);
+#endif
+            printf("  Static library: %s\n", lib->lib_file);
+        }
+        fetched++;
+    }
+    printf("[Project] Loaded %d libraries\n", fetched);
+    return 0;
 }

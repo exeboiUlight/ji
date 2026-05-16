@@ -1,4 +1,4 @@
-﻿#include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "../include/token.h"
@@ -161,6 +161,19 @@ static int compile_source(const char *source_path, const char *root_path,
             }
         }
         info->import_count = 2;
+        info->imports[1].func_capacity = cg->import_call_count;
+        info->imports[1].func_names = (const char**)malloc(cg->import_call_count * sizeof(const char*));
+        info->imports[1].func_count = 0;
+        for (int i = 0; i < cg->import_call_count; i++) {
+            int dup = 0;
+            for (int j = 0; j < info->imports[1].func_count; j++)
+                if (strcmp(info->imports[1].func_names[j], cg->import_names[i]) == 0) { dup = 1; break; }
+            if (!dup) {
+                info->imports[1].func_names[info->imports[1].func_count] = cg->import_names[i];
+                info->imports[1].func_count++;
+            }
+        }
+        info->import_count = 2;
     }
 
     if (out_ast) *out_ast = ast;
@@ -222,6 +235,9 @@ int main(int argc, char **argv) {
         project_print(&cfg);
         printf("\n");
 
+        project_fetch_libraries(&cfg, proj_dir);
+        printf("\n");
+
         /* Determine target from project name or default */
         char main_ji[512];
         snprintf(main_ji, sizeof(main_ji), "%s/src/main.ji", proj_dir);
@@ -237,6 +253,43 @@ int main(int argc, char **argv) {
 
         if (compile_source(main_ji, src_root, target_os, &emit, &cg, &info, &ast) != 0)
             return 1;
+
+        for (int i = 0; i < cfg.libraries.count; i++) {
+            LibraryConfig *lib = &cfg.libraries.libs[i];
+            if (lib->type == LIB_DYNAMIC && lib->name[0] != '\0') {
+                char dll_name[256];
+                const char *base = lib->name;
+                const char *dot = strrchr(base, '.');
+                if (dot) {
+                    int len = (int)(dot - base);
+                    if (len < sizeof(dll_name)) {
+                        memcpy(dll_name, base, len);
+                        dll_name[len] = '\0';
+                    } else {
+                        dll_name[0] = '\0';
+                    }
+                } else {
+                    snprintf(dll_name, sizeof(dll_name), "%s", base);
+                }
+                printf("[Main] Linking dynamic library: %s -> %s.dll\n", lib->name, dll_name);
+                pe_info_add_import(&info, dll_name, ""); /* Add DLL import */
+            } else if (lib->type == LIB_STATIC) {
+                printf("[Main] Linking static library: %s\n", lib->lib_file);
+                FILE *lf = fopen(lib->lib_file, "rb");
+                if (lf) {
+                    fseek(lf, 0, SEEK_END);
+                    long sz = ftell(lf);
+                    fseek(lf, 0, SEEK_SET);
+                    uint8_t *buf = (uint8_t*)malloc(sz);
+                    fread(buf, 1, sz, lf);
+                    fclose(lf);
+                    pe_info_add_static_lib(&info, lib->lib_file, buf, (int)sz);
+                    free(buf);
+                } else {
+                    fprintf(stderr, "[Main] Warning: static library not found: %s\n", lib->lib_file);
+                }
+            }
+        }
 
         if (is_run) {
             /* JIT execute */

@@ -34,7 +34,6 @@ static const char* func_dll(const char *name) {
 }
 
 int jit_run(Codegen *cg, PEInfo *info) {
-    (void)cg; /* unused in Windows JIT */
     if (info->entry_offset < 0) {
         fprintf(stderr, "[JIT] Entry point not found\n");
         return 1;
@@ -142,18 +141,25 @@ int jit_run(Codegen *cg, PEInfo *info) {
     int jit_argc = 1;
     char jit_program_name[] = "program";
     char* jit_argv[2] = { jit_program_name, NULL };
+    char** jit_argv_ptr = jit_argv;
 
     /* Initialize global variables argc and argv */
     int global_count = codegen_get_global_count(cg);
+    printf("[JIT] Global count: %d\n", global_count);
+    printf("[JIT] Code size: %d, total alloc: %zu\n", info->code_size, alloc_size);
     for (int i = 0; i < global_count; i++) {
         const char* name = codegen_get_global_name(cg, i);
         int offset = codegen_get_global_offset(cg, i);
+        printf("[JIT] Global %d: name=%s, offset=%d\n", i, name, offset);
         if (offset < 0) continue;
         uint8_t* global_addr = code_base + info->code_size + offset;
+        printf("[JIT]   Writing to address: %p\n", (void*)global_addr);
         if (strcmp(name, "argc") == 0) {
             *(int*)global_addr = jit_argc;
+            printf("[JIT]   Set argc = %d\n", jit_argc);
         } else if (strcmp(name, "argv") == 0) {
-            *(char**)global_addr = jit_argv;
+            *(char***)global_addr = jit_argv_ptr;
+            printf("[JIT]   Set argv = %p\n", (void*)jit_argv_ptr);
         }
     }
 

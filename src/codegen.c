@@ -753,6 +753,17 @@ void codegen_generate(Codegen *cg, ASTNode *program) {
         emit_bytes(e, (uint8_t*)cg->strings[i].value, len + 1);
     }
 
+    for (int i = 0; i < cg->global_count; i++) {
+        char label[32];
+        snprintf(label, sizeof(label), "_global_%d", cg->globals[i].data_offset);
+        emit_label_def(e, label);
+        if (cg->globals[i].is_pointer) {
+            emit_qword(e, 0);
+        } else {
+            emit_dword(e, 0);
+        }
+    }
+
     emit_resolve(e);
     free(func_names);
     free(cg_locals);
@@ -768,3 +779,13 @@ int codegen_get_entry(Codegen *cg) {
 int codegen_get_import_call_count(Codegen *cg) { return cg->import_call_count; }
 int codegen_get_import_call_pos(Codegen *cg, int i) { return cg->import_call_sites[i]; }
 const char* codegen_get_import_call_name(Codegen *cg, int i) { return cg->import_names[i]; }
+
+int codegen_get_global_count(Codegen *cg) { return cg->global_count; }
+int codegen_get_global_offset(Codegen *cg, int idx) {
+    if (idx >= 0 && idx < cg->global_count) return cg->globals[idx].data_offset;
+    return -1;
+}
+const char* codegen_get_global_name(Codegen *cg, int idx) {
+    if (idx >= 0 && idx < cg->global_count) return cg->globals[idx].name;
+    return NULL;
+}

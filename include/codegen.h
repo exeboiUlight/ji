@@ -57,4 +57,8 @@ int codegen_get_import_call_count(Codegen *cg);
 int codegen_get_import_call_pos(Codegen *cg, int i);
 const char* codegen_get_import_call_name(Codegen *cg, int i);
 
+int codegen_get_global_count(Codegen *cg);
+int codegen_get_global_offset(Codegen *cg, int idx);
+const char* codegen_get_global_name(Codegen *cg, int idx);
+
 #endif

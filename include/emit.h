@@ -113,6 +113,7 @@ void emit_sub_eax_imm(Emitter *e, uint32_t imm);
 void emit_not_eax(Emitter *e);
 void emit_xor_eax_ebx(Emitter *e);
 void emit_lea_eax_rip_label(Emitter *e, const char *label);
+void emit_mov_eax_rip_label(Emitter *e, const char *label);
 void emit_lea_eax_rbp_disp(Emitter *e, int disp);
 void emit_mov_eax_eax_mem(Emitter *e);
 void emit_mov_eax_mem_eax(Emitter *e);

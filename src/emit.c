@@ -209,6 +209,24 @@ void emit_lea_eax_rip_label(Emitter *e, const char *label) {
         emit_dword(e, 0);
     }
 }
+
+void emit_mov_eax_rip_label(Emitter *e, const char *label) {
+    emit_byte(e, 0x48); /* REX.W for 64-bit address */
+    emit_byte(e, 0x8B);
+    emit_byte(e, 0x05);
+    int idx = emit_label_ref(e, label);
+    if (idx >= 0) {
+        ensure_reloc_capacity(e);
+        e->relocs[e->reloc_count].offset = e->pos;
+        e->relocs[e->reloc_count].label_idx = idx;
+        e->relocs[e->reloc_count].type = RELOC_JMP;
+        e->reloc_count++;
+        emit_dword(e, 0);
+    } else {
+        emit_dword(e, 0);
+    }
+}
+
 void emit_lea_eax_rbp_disp(Emitter *e, int disp) {
     emit_byte(e, 0x48); /* REX.W for 64-bit address */
     if (disp >= -128 && disp <= 127) {

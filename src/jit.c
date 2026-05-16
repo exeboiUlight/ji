@@ -143,6 +143,20 @@ int jit_run(Codegen *cg, PEInfo *info) {
     char jit_program_name[] = "program";
     char* jit_argv[2] = { jit_program_name, NULL };
 
+    /* Initialize global variables argc and argv */
+    int global_count = codegen_get_global_count(cg);
+    for (int i = 0; i < global_count; i++) {
+        const char* name = codegen_get_global_name(cg, i);
+        int offset = codegen_get_global_offset(cg, i);
+        if (offset < 0) continue;
+        uint8_t* global_addr = code_base + info->code_size + offset;
+        if (strcmp(name, "argc") == 0) {
+            *(int*)global_addr = jit_argc;
+        } else if (strcmp(name, "argv") == 0) {
+            *(char**)global_addr = jit_argv;
+        }
+    }
+
     /* Call entry point (main function) with argc/argv */
     printf("[JIT] Executing...\n");
     int (*entry)(int, char**) = (int (*)(int, char**))(code_base + info->entry_offset);

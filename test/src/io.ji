@@ -1,0 +1,11 @@
+int printf(char* fmt);
+int scanf(char* fmt);
+char* gets(char* buf);
+void* malloc(int size);
+void free(void* ptr);
+void exit(int code);
+void* fopen(char* filename, char* mode);
+int fclose(void* file);
+
+int argc;
+char** argv;

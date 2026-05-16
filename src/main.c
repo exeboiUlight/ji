@@ -161,19 +161,6 @@ static int compile_source(const char *source_path, const char *root_path,
             }
         }
         info->import_count = 2;
-        info->imports[1].func_capacity = cg->import_call_count;
-        info->imports[1].func_names = (const char**)malloc(cg->import_call_count * sizeof(const char*));
-        info->imports[1].func_count = 0;
-        for (int i = 0; i < cg->import_call_count; i++) {
-            int dup = 0;
-            for (int j = 0; j < info->imports[1].func_count; j++)
-                if (strcmp(info->imports[1].func_names[j], cg->import_names[i]) == 0) { dup = 1; break; }
-            if (!dup) {
-                info->imports[1].func_names[info->imports[1].func_count] = cg->import_names[i];
-                info->imports[1].func_count++;
-            }
-        }
-        info->import_count = 2;
     }
 
     if (out_ast) *out_ast = ast;

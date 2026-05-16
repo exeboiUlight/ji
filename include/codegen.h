@@ -18,6 +18,12 @@ typedef struct {
     int size;
 } CodegenClassSize;
 
+typedef struct {
+    char name[128];
+    int data_offset;
+    int is_pointer;
+} CodegenGlobalVar;
+
 typedef struct Codegen {
     TokenRegistry *registry;
     Emitter *emitter;
@@ -36,6 +42,11 @@ typedef struct Codegen {
     CodegenClassSize *class_sizes;
     int class_count;
     int class_capacity;
+
+    CodegenGlobalVar *globals;
+    int global_count;
+    int global_capacity;
+    int global_data_size;
 } Codegen;
 
 void codegen_init(Codegen *cg, TokenRegistry *reg, Emitter *em);

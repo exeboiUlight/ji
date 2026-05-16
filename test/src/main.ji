@@ -1,0 +1,6 @@
+import "io.ji";
+
+int main() {
+    printf("Hello, World!\n");
+    return 0;
+}

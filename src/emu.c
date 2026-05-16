@@ -509,7 +509,7 @@ static int emu_exec(EmuContext *ctx) {
     return 0;
 }
 
-int emu_init(EmuContext *ctx, uint8_t *code, uint64_t code_size, uint64_t entry_point) {
+int emu_init(EmuContext *ctx, uint8_t *code, uint64_t code_size, uint64_t entry_point, int argc, char** argv) {
     ctx->mem_size = MEM_SIZE;
     ctx->memory = (uint8_t*)calloc(1, ctx->mem_size);
     if (!ctx->memory) return -1;
@@ -521,6 +521,10 @@ int emu_init(EmuContext *ctx, uint8_t *code, uint64_t code_size, uint64_t entry_
 
     if (code_size > 0 && code_size < MEM_SIZE - CODE_OFFSET)
         memcpy(ctx->memory + CODE_OFFSET, code, code_size);
+
+    /* Set up argc and argv for main() per System V AMD64 ABI */
+    ctx->rdi = (uint64_t)argc;
+    ctx->rsi = (uint64_t)argv;
 
     ctx->running = 1;
     ctx->exit_code = 0;

@@ -1,0 +1,7 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "type": "executable",
+  "entry": "src/main.ji",
+  "libraries": []
+}

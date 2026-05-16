@@ -138,10 +138,15 @@ int jit_run(Codegen *cg, PEInfo *info) {
 
     free(thunks);
 
-    /* Call entry point (main function) */
+    /* Prepare argc and argv for main() */
+    int jit_argc = 1;
+    char jit_program_name[] = "program";
+    char* jit_argv[2] = { jit_program_name, NULL };
+
+    /* Call entry point (main function) with argc/argv */
     printf("[JIT] Executing...\n");
-    int (*entry)(void) = (int (*)(void))(code_base + info->entry_offset);
-    int result = entry();
+    int (*entry)(int, char**) = (int (*)(int, char**))(code_base + info->entry_offset);
+    int result = entry(jit_argc, jit_argv);
 
     printf("[JIT] Process exited with code %d\n", result);
     VirtualFree(exec_mem, 0, MEM_RELEASE);
@@ -160,11 +165,16 @@ int jit_run(Codegen *cg, PEInfo *info) {
         return 1;
     }
 
+    /* Prepare argc and argv for main() */
+    int jit_argc = 1;
+    char jit_program_name[] = "program";
+    char* jit_argv[2] = { jit_program_name, NULL };
+
     EmuContext emu;
     memset(&emu, 0, sizeof(emu));
 
     uint64_t entry_point = 0x400000 + info->entry_offset;
-    if (emu_init(&emu, info->code, info->code_size, entry_point) != 0) {
+    if (emu_init(&emu, info->code, info->code_size, entry_point, jit_argc, jit_argv) != 0) {
         fprintf(stderr, "[EMU] Failed to initialize emulator\n");
         return 1;
     }

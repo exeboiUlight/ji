@@ -37,6 +37,26 @@ static void cg_add_local(const char *name) {
     cg_local_count++; cg_local_size += 4;
 }
 
+static void cg_add_global(Codegen *cg, const char *name, int size, int is_pointer) {
+    if (cg->global_count >= cg->global_capacity) {
+        int newcap = cg->global_capacity ? cg->global_capacity * 2 : 16;
+        cg->globals = (CodegenGlobalVar*)realloc(cg->globals, newcap * sizeof(CodegenGlobalVar));
+        cg->global_capacity = newcap;
+    }
+    strcpy_safe(cg->globals[cg->global_count].name, name);
+    cg->globals[cg->global_count].data_offset = cg->global_data_size;
+    cg->globals[cg->global_count].is_pointer = is_pointer;
+    cg->global_data_size += size;
+    cg->global_count++;
+}
+
+static int cg_find_global(Codegen *cg, const char *name) {
+    for (int i = 0; i < cg->global_count; i++) {
+        if (strcmp(cg->globals[i].name, name) == 0) return i;
+    }
+    return -1;
+}
+
 /* String pool helper */
 static int cg_add_string(Codegen *cg, const char *value) {
     for (int i = 0; i < cg->string_count; i++)
@@ -92,6 +112,18 @@ static void cg_expr(Codegen *cg, ASTNode *n) {
             if (off) { emit_mov_eax_rbp_disp(e, off); break; }
             off = cg_find_param(n->d.ident.name);
             if (off) { emit_mov_eax_rbp_disp(e, off); break; }
+            int gidx = cg_find_global(cg, n->d.ident.name);
+            if (gidx >= 0) {
+                char label[32];
+                int goff = cg->globals[gidx].data_offset;
+                snprintf(label, sizeof(label), "_global_%d", goff);
+                if (cg->globals[gidx].is_pointer) {
+                    emit_lea_eax_rip_label(e, label);
+                } else {
+                    emit_mov_eax_rip_label(e, label);
+                }
+                break;
+            }
             emit_xor_eax_eax(e);
             break;
         }
@@ -617,6 +649,13 @@ void codegen_init(Codegen *cg, TokenRegistry *reg, Emitter *em) {
     cg->class_sizes = NULL;
     cg->class_count = 0;
     cg->class_capacity = 0;
+    cg->globals = NULL;
+    cg->global_count = 0;
+    cg->global_capacity = 0;
+    cg->global_data_size = 0;
+
+    cg_add_global(cg, "argc", 4, 0);
+    cg_add_global(cg, "argv", 8, 1);
 }
 
 void codegen_generate(Codegen *cg, ASTNode *program) {

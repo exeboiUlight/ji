@@ -17,7 +17,7 @@ typedef struct {
     int exit_code;
 } EmuContext;
 
-int emu_init(EmuContext *ctx, uint8_t *code, uint64_t code_size, uint64_t entry_point);
+int emu_init(EmuContext *ctx, uint8_t *code, uint64_t code_size, uint64_t entry_point, int argc, char** argv);
 void emu_free(EmuContext *ctx);
 int emu_run(EmuContext *ctx);
 
